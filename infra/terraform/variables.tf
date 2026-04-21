@@ -1,6 +1,7 @@
 variable "project_id" {
   description = "GCP project ID"
   type        = string
+  default     = "project-385a0cab-c44a-4b07-926"
 }
 
 variable "region" {
@@ -24,7 +25,7 @@ variable "cluster_name" {
 variable "node_machine_type" {
   description = "GCE machine type for cluster nodes"
   type        = string
-  default     = "e2-small"
+  default     = "e2-medium"
 }
 
 variable "min_node_count" {
