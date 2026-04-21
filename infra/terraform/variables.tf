@@ -25,7 +25,7 @@ variable "cluster_name" {
 variable "node_machine_type" {
   description = "GCE machine type for cluster nodes"
   type        = string
-  default     = "e2-medium"
+  default     = "e2-standard-2"
 }
 
 variable "min_node_count" {
