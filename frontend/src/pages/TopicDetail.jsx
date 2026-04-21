@@ -6,7 +6,7 @@ import { fetchTopic, visitTopic, completeTopic, ensureSession } from '../api'
 export default function TopicDetail() {
   const { slug } = useParams()
   const [topic, setTopic] = useState(null)
-  const [session, setSession] = useState(null)So 
+  const [session, setSession] = useState(null)
 
   useEffect(() => {
     Promise.all([fetchTopic(slug), ensureSession()]).then(([t, s]) => {
