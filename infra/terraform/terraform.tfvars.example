@@ -1,0 +1,7 @@
+project_id        = "project-385a0cab-c44a-4b07-926"
+region            = "us-east1"
+zone              = "us-east1-b"
+cluster_name      = "devops-hub"
+node_machine_type = "e2-small"
+min_node_count    = 1
+max_node_count    = 1

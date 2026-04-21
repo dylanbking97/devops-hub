@@ -1,0 +1,25 @@
+# Traefik IngressRoute — routes incoming traffic to the correct service.
+# /api/* → backend (FastAPI)
+# /*     → frontend (nginx serving the React SPA)
+#
+# To add a domain: set `match` to `Host(`your-domain.com`) && PathPrefix(`/api`)`
+# and configure a Let's Encrypt certificate resolver in the Traefik Helm values.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: devops-hub
+  namespace: devops-hub
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: PathPrefix(`/api`)
+      kind: Rule
+      services:
+        - name: backend
+          port: 8000
+    - match: PathPrefix(`/`)
+      kind: Rule
+      services:
+        - name: frontend
+          port: 80

@@ -1,0 +1,30 @@
+# ── App of Apps (root) ───────────────────────────────────────────────────────
+# This is the single manifest you apply to bootstrap the entire cluster.
+# ArgoCD syncs this directory, which contains child Application manifests
+# for each component. Adding a new app is as simple as adding a new file here.
+#
+# Bootstrap:
+#   kubectl apply -f infra/k8s/apps/app-of-apps.yaml
+#
+# After that, every merge to main deploys to the cluster automatically.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-of-apps
+  namespace: argocd
+  # Finalizer ensures ArgoCD cascades deletion of child apps when this is removed
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/YOUR_USERNAME/YOUR_REPO.git  # ← update this
+    targetRevision: main
+    path: infra/k8s/apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

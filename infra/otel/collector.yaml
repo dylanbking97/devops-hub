@@ -1,0 +1,25 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318   # backend sends spans here
+
+processors:
+  batch:
+    timeout: 1s                   # wait up to 1s to batch spans before forwarding
+    send_batch_size: 1024
+
+exporters:
+  otlp:
+    endpoint: jaeger:4317         # forward to Jaeger via OTLP
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp]

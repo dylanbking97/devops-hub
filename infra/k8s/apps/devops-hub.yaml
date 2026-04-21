@@ -1,0 +1,24 @@
+# Deploys the main application: backend, frontend, Redis, and IngressRoute.
+# ArgoCD watches infra/k8s/devops-hub/ and syncs any changes automatically.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devops-hub
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/YOUR_USERNAME/YOUR_REPO.git  # ← update this
+    targetRevision: main
+    path: infra/k8s/devops-hub
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: devops-hub
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

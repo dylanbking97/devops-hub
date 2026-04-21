@@ -1,0 +1,20 @@
+# ServiceMonitor is a CRD from the Prometheus Operator.
+# It declaratively tells Prometheus which services to scrape and how —
+# no manual prometheus.yaml edits needed.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: backend
+  namespace: devops-hub
+  labels:
+    # This label must match kube-prometheus-stack's serviceMonitorSelector.
+    # The prometheus ArgoCD Application sets serviceMonitorSelector: {} to match all.
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: backend
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s

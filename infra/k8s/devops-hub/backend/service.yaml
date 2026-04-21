@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: devops-hub
+  labels:
+    app: backend
+spec:
+  selector:
+    app: backend
+  ports:
+    # Named port required for ServiceMonitor to reference by name
+    - name: http
+      port: 8000
+      targetPort: 8000

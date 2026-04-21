@@ -1,0 +1,39 @@
+# Installs kube-prometheus-stack via Helm, managed by ArgoCD.
+# Bundles: Prometheus, Alertmanager, Grafana, node-exporter, kube-state-metrics,
+# and the Prometheus Operator (which processes ServiceMonitor CRDs).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prometheus
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: "65.x"
+    helm:
+      values: |
+        grafana:
+          adminPassword: changeme   # Change this or use a Secret reference
+        prometheus:
+          prometheusSpec:
+            # Allow Prometheus to discover ServiceMonitors in any namespace.
+            # Without this, only ServiceMonitors in the same namespace are found.
+            serviceMonitorSelectorNilUsesHelmValues: false
+            serviceMonitorNamespaceSelector: {}
+            serviceMonitorSelector: {}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # kube-prometheus-stack has large CRDs that exceed annotation size limits.
+      # ServerSideApply bypasses this by letting the server manage field ownership.
+      - ServerSideApply=true
