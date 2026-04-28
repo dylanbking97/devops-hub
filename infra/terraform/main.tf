@@ -8,12 +8,10 @@ terraform {
     }
   }
 
-  # Uncomment to store state in GCS — recommended for any shared/production use.
-  # Create the bucket first, then run `terraform init` to migrate local state.
-  # backend "gcs" {
-  #   bucket = "YOUR_BUCKET_NAME"
-  #   prefix = "devops-hub/terraform"
-  # }
+  backend "gcs" {
+    bucket = "devops-hub-tfstate-385a0cab"
+    prefix = "devops-hub/terraform"
+  }
 }
 
 provider "google" {
