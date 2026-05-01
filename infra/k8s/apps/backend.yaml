@@ -1,0 +1,39 @@
+# Backend kustomize app. Image-updater watches the backend image in
+# Artifact Registry and writes the new SHA tag to kustomization.yaml.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: backend
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    # Watch this image; key "backend" is the alias used in per-image keys below.
+    argocd-image-updater.argoproj.io/image-list: backend=us-east1-docker.pkg.dev/project-385a0cab-c44a-4b07-926/devops-hub/backend
+    # Match 7-char hex git short SHAs only (skip "latest", semver, etc.).
+    argocd-image-updater.argoproj.io/backend.allow-tags: regexp:^[a-f0-9]{7}$
+    # newest-build picks the most recently pushed tag (uses registry timestamps).
+    argocd-image-updater.argoproj.io/backend.update-strategy: newest-build
+    # Write the new tag back to git (kustomization.yaml `images:` field) so
+    # git remains source of truth — instead of patching the live Application.
+    # `git:secret:` references the GitHub PAT secret for push access.
+    argocd-image-updater.argoproj.io/write-back-method: git:secret:argocd/git-creds-devops-hub
+    argocd-image-updater.argoproj.io/write-back-target: kustomization
+    argocd-image-updater.argoproj.io/git-branch: main
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/dylanbking97/devops-hub.git
+    targetRevision: main
+    path: infra/k8s/devops-hub/backend
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: devops-hub
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

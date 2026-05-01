@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: devops-hub
+resources:
+  - rollout.yaml
+  - service-stable.yaml
+  - service-canary.yaml
+  - servicemonitor.yaml
+  - httproute.yaml
+images:
+  # argocd-image-updater rewrites `newTag` here on every new build.
+  - name: us-east1-docker.pkg.dev/project-385a0cab-c44a-4b07-926/devops-hub/backend
+    newTag: latest

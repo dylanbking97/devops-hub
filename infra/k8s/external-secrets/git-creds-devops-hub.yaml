@@ -1,0 +1,31 @@
+# Materializes the GitHub PAT (stored as JSON in GCP Secret Manager) as a
+# K8s Secret in the argocd namespace where argocd-image-updater reads it.
+#
+# Source secret in GCP Secret Manager (must exist before ESO can sync):
+#   name:    git-creds-devops-hub
+#   payload: {"username":"dylanbking97","password":"<PAT>"}
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: git-creds-devops-hub
+  namespace: argocd
+spec:
+  # ESO re-reads from GCP every interval; rotate the SM secret and the K8s
+  # Secret follows automatically.
+  refreshInterval: 1h
+  secretStoreRef:
+    name: gcp-secret-manager
+    kind: ClusterSecretStore
+  target:
+    name: git-creds-devops-hub
+    # Owner = ESO creates and owns the Secret (deleted when this CR is deleted).
+    creationPolicy: Owner
+  data:
+    - secretKey: username
+      remoteRef:
+        key: git-creds-devops-hub
+        property: username
+    - secretKey: password
+      remoteRef:
+        key: git-creds-devops-hub
+        property: password

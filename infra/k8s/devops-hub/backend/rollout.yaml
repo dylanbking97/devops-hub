@@ -1,10 +1,11 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: backend
   namespace: devops-hub
 spec:
   replicas: 2
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: backend
@@ -42,3 +43,22 @@ spec:
             limits:
               cpu: 500m
               memory: 256Mi
+  strategy:
+    canary:
+      # Argo Rollouts creates two ReplicaSets and binds these Services to
+      # each via a managed `rollouts-pod-template-hash` selector.
+      canaryService: backend-canary
+      stableService: backend-stable
+      trafficRouting:
+        plugins:
+          # Plugin shifts weights on the HTTPRoute's backendRefs at each step.
+          argoproj-labs/gatewayAPI:
+            httpRoute: backend
+            namespace: devops-hub
+      steps:
+        - setWeight: 20
+        - pause: { duration: 30s }
+        - setWeight: 50
+        - pause: { duration: 30s }
+        - setWeight: 80
+        - pause: { duration: 30s }

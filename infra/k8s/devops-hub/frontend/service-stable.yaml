@@ -1,8 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: frontend
+  name: frontend-stable
   namespace: devops-hub
+  labels:
+    app: frontend
 spec:
   selector:
     app: frontend

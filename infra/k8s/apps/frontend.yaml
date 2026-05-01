@@ -1,0 +1,32 @@
+# Frontend kustomize app. See backend.yaml for image-updater annotation rationale.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: frontend
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    argocd-image-updater.argoproj.io/image-list: frontend=us-east1-docker.pkg.dev/project-385a0cab-c44a-4b07-926/devops-hub/frontend
+    argocd-image-updater.argoproj.io/frontend.allow-tags: regexp:^[a-f0-9]{7}$
+    argocd-image-updater.argoproj.io/frontend.update-strategy: newest-build
+    argocd-image-updater.argoproj.io/write-back-method: git:secret:argocd/git-creds-devops-hub
+    argocd-image-updater.argoproj.io/write-back-target: kustomization
+    argocd-image-updater.argoproj.io/git-branch: main
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/dylanbking97/devops-hub.git
+    targetRevision: main
+    path: infra/k8s/devops-hub/frontend
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: devops-hub
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

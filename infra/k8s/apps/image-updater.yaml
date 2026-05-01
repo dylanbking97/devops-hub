@@ -1,0 +1,86 @@
+# argocd-image-updater: polls container registries for new image tags and
+# writes them back to git, which ArgoCD then syncs to the cluster.
+#
+# Auth model:
+#   - Artifact Registry: Workload Identity. The K8s SA `argocd-image-updater`
+#     is bound to GCP SA `image-updater-ar@…`, which has roles/artifactregistry.reader.
+#     A small helper script fetches a fresh OAuth token from the GKE metadata
+#     server on every registry call.
+#   - GitHub: PAT in the secret `argocd/git-creds-devops-hub` (created out-of-band).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-image-updater
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://argoproj.github.io/argo-helm
+    chart: argocd-image-updater
+    targetRevision: "0.12.x"
+    helm:
+      values: |
+        serviceAccount:
+          create: true
+          name: argocd-image-updater
+          annotations:
+            # Binds this K8s SA to the GCP SA via Workload Identity.
+            iam.gke.io/gcp-service-account: image-updater-ar@project-385a0cab-c44a-4b07-926.iam.gserviceaccount.com
+
+        # Mount the auth helper script (defined in extraObjects below) at /auth.
+        extraVolumes:
+          - name: gcp-auth-helper
+            configMap:
+              name: gcp-auth-helper
+              defaultMode: 0555
+        extraVolumeMounts:
+          - name: gcp-auth-helper
+            mountPath: /auth
+            readOnly: true
+
+        # ConfigMap holding the credential helper. image-updater calls it on
+        # every registry request and reads `username:password` from stdout.
+        extraObjects:
+          - apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: gcp-auth-helper
+              namespace: argocd
+            data:
+              auth.sh: |
+                #!/bin/sh
+                # Fetches a short-lived OAuth token from the GKE metadata server.
+                # Workload Identity translates this to GCP SA `image-updater-ar`.
+                TOKEN=$(wget -qO- --header='Metadata-Flavor: Google' \
+                  http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token \
+                  | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
+                printf 'oauth2accesstoken:%s' "$TOKEN"
+
+        config:
+          registries:
+            - name: GCP Artifact Registry us-east1
+              api_url: https://us-east1-docker.pkg.dev
+              prefix: us-east1-docker.pkg.dev
+              ping: yes
+              credentials: ext:/auth/auth.sh
+              # Token from metadata server lasts ~1h; refresh well before that.
+              credsexpire: 30m
+              default: false
+
+          gitCommitUser: argocd-image-updater
+          gitCommitMail: argocd-image-updater@noreply.local
+          gitCommitTemplate: |
+            build: bump {{ range .AppChanges -}}
+            {{ .Image }} to {{ .NewTag }}
+            {{ end }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

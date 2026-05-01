@@ -8,10 +8,11 @@ terraform {
     }
   }
 
-  backend "gcs" {
-    bucket = "devops-hub-tfstate-385a0cab"
-    prefix = "devops-hub/terraform"
-  }
+  # Uncomment to store state in GCS for shared/remote use.
+  # backend "gcs" {
+  #   bucket = "devops-hub-tfstate-385a0cab"
+  #   prefix = "devops-hub/terraform"
+  # }
 }
 
 provider "google" {

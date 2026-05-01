@@ -1,0 +1,46 @@
+# Argo Rollouts: progressive delivery controller (canary, blue-green).
+# We use the Gateway API trafficrouter plugin so canary steps shift real
+# request traffic via Traefik HTTPRoute weights — not just pod ratios.
+#
+# Plugin: https://github.com/argoproj-labs/rollouts-plugin-trafficrouter-gatewayapi
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argo-rollouts
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://argoproj.github.io/argo-helm
+    chart: argo-rollouts
+    targetRevision: "2.37.x"
+    helm:
+      values: |
+        controller:
+          # Load Gateway API trafficrouter plugin. Controller downloads the
+          # binary on startup and uses it whenever a Rollout references
+          # `trafficRouting.plugins.argoproj-labs/gatewayAPI`.
+          trafficRouterPlugins:
+            - name: "argoproj-labs/gatewayAPI"
+              location: "https://github.com/argoproj-labs/rollouts-plugin-trafficrouter-gatewayapi/releases/download/v0.5.0/gatewayapi-plugin-linux-amd64"
+          # Plugin needs to read & patch HTTPRoute backendRefs to shift weights.
+          extraClusterRoleRules:
+            - apiGroups: ["gateway.networking.k8s.io"]
+              resources: ["httproutes"]
+              verbs: ["get", "list", "watch", "update", "patch"]
+        dashboard:
+          enabled: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argo-rollouts
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
