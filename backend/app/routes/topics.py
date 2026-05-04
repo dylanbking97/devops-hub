@@ -8,6 +8,7 @@ router = APIRouter()
 def list_topics():
     # CANARY ABORT TEST — remove this line to restore.
     raise HTTPException(status_code=500, detail="canary fault test")
+    
     return [
         {"slug": t["slug"], "title": t["title"], "summary": t["summary"], "icon": t["icon"]}
         for t in TOPICS
