@@ -10,4 +10,4 @@ resources:
   - analysistemplate.yaml
 images:
   - name: us-east1-docker.pkg.dev/project-385a0cab-c44a-4b07-926/devops-hub/backend
-    newTag: 73d13ce
+    newTag: 27e14a9
