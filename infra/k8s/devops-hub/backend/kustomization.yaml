@@ -7,6 +7,7 @@ resources:
   - service-canary.yaml
   - servicemonitor.yaml
   - httproute.yaml
+  - analysistemplate.yaml
 images:
   # argocd-image-updater rewrites `newTag` here on every new build.
   - name: us-east1-docker.pkg.dev/project-385a0cab-c44a-4b07-926/devops-hub/backend

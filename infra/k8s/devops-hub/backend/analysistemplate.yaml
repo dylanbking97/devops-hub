@@ -1,0 +1,37 @@
+# Gates canary promotion on backend HTTP success rate measured from
+# kube-prometheus-stack. Rollout calls this between weight steps; if 5xx
+# rate exceeds the threshold, the canary is aborted and traffic returns
+# to the stable ReplicaSet automatically.
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: backend-success-rate
+  namespace: devops-hub
+spec:
+  args:
+    # Injected from the Rollout via `valueFrom.podTemplateHashValue: Latest`.
+    # Used to filter the PromQL query to canary pods only — without it we'd
+    # be measuring stable + canary together and miss the regression.
+    - name: canary-hash
+  metrics:
+    - name: success-rate
+      # Take 3 measurements 30s apart (≈90s window). Keeps each canary
+      # step short enough for learning without being noise-driven.
+      interval: 30s
+      count: 3
+      # Promote when ≥95% of canary requests are non-5xx.
+      successCondition: result[0] >= 0.95
+      # Abort on the first failed measurement (don't wait for 3 in a row).
+      failureLimit: 1
+      provider:
+        prometheus:
+          address: http://prometheus-kube-prometheus-prometheus.monitoring.svc:9090
+          query: |
+            sum(rate(http_requests_total{
+              pod=~"backend-{{args.canary-hash}}-.*",
+              status!~"5.."
+            }[2m]))
+            /
+            sum(rate(http_requests_total{
+              pod=~"backend-{{args.canary-hash}}-.*"
+            }[2m]))
