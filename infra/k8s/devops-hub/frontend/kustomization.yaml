@@ -8,4 +8,4 @@ resources:
   - httproute.yaml
 images:
   - name: us-east1-docker.pkg.dev/project-385a0cab-c44a-4b07-926/devops-hub/frontend
-    newTag: latest
+    newTag: b5798a8
